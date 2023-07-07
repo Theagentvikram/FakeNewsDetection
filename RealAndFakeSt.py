@@ -62,3 +62,4 @@ if uploaded_true is not None and uploaded_fake is not None:
         st.write("The news is Real")
     else:
         st.write("The news is Fake")
+#sree
