@@ -45,7 +45,8 @@ if uploaded_true is not None and uploaded_fake is not None:
     df_fake['content'] = df_fake['content'].apply(preprocess_text)
 
     # Combine the datasets
-    df = pd.concat([df_true, df_fake], ignore_index=True)
+    df = pd.concat([df_true, df_fake], ignore_index=False
+                   )
 
     # Train the model
     vectorizer = TfidfVectorizer()
