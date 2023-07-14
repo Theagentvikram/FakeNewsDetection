@@ -12,13 +12,13 @@ import nltk
 
 nltk.download('stopwords')
 stop_words = stopwords.words('english')
-st.set_page_config(page_title="Fake News Detection", page_icon="IMG.png")
+port_stem = PorterStemmer()
+
 def preprocess_text(content):
-    ps = PorterStemmer()
     stemmed_content = re.sub('[^a-zA-Z]', ' ', content)
     stemmed_content = stemmed_content.lower()
     stemmed_content = stemmed_content.split()
-    stemmed_content = [ps.stem(word) for word in stemmed_content if word not in stop_words]
+    stemmed_content = [port_stem.stem(word) for word in stemmed_content if word not in stop_words]
     stemmed_content = ' '.join(stemmed_content)
     return stemmed_content
 
@@ -38,50 +38,48 @@ if uploaded_true is not None and uploaded_fake is not None:
     df_true = pd.read_csv(uploaded_true)
     df_fake = pd.read_csv(uploaded_fake)
 
-    # Looking and replacing null data
-    df_true = df_true.fillna('')
-    df_fake = df_fake.fillna('')
-
-    # Merging author name and news title for easier use
-    df_true['content'] = df_true['title'] + ' ' + df_true['text'] + ' ' + df_true['date']
-    df_fake['content'] = df_fake['title'] + ' ' + df_fake['text'] + ' ' + df_fake['date']
-
     # Preprocess the data
+    df_true['content'] = df_true['title'] + ' ' + df_true['text'] + ' ' + df_true['subject'] + ' ' + df_true['date']
     df_true['content'] = df_true['content'].apply(preprocess_text)
+
+    df_fake['content'] = df_fake['title'] + ' ' + df_fake['text'] + ' ' + df_fake['subject'] + ' ' + df_fake['date']
     df_fake['content'] = df_fake['content'].apply(preprocess_text)
 
     # Combine the datasets
     df = pd.concat([df_true, df_fake], ignore_index=True)
 
-    x = df['content'].values
-    y = df['label'].values
+    # Separate the data and label
+    X = df['content'].values
+    y = np.concatenate([np.zeros(len(df_true)), np.ones(len(df_fake))])
 
-    # Converting the textual data to numerical data for easier use
+    # Split the dataset into training and testing subsets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+    # Vectorize the text data
     vectorizer = TfidfVectorizer()
-    vectorizer.fit(x)
-    x = vectorizer.transform(x)
+    X_train_vectorized = vectorizer.fit_transform(X_train)
+    X_test_vectorized = vectorizer.transform(X_test)
 
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, stratify=y, random_state=2)
+    # Train the model
     model = LogisticRegression()
-    model.fit(x_train, y_train)
+    model.fit(X_train_vectorized, y_train)
 
-    x_train_pred = model.predict(x_train)
-    training_data_acc = accuracy_score(x_train_pred, y_train)
+    # Evaluate the model
+    y_train_pred = model.predict(X_train_vectorized)
+    train_accuracy = accuracy_score(y_train, y_train_pred)
 
-    x_test_pred = model.predict(x_test)
-    test_data_acc = accuracy_score(x_test_pred, y_test)
+    y_test_pred = model.predict(X_test_vectorized)
+    test_accuracy = accuracy_score(y_test, y_test_pred)
 
-    st.write(f"Training Accuracy: {training_data_acc}")
-    st.write(f"Test Accuracy: {test_data_acc}")
-
+    # User input
     text = st.text_area("Enter the news text:")
-    
-    if st.button("Predict"):
-        if text:
-            with st.spinner("Predicting..."):
-                prediction = predict_fake_news(text)
+    if text:
+        prediction = predict_fake_news(text)
+        if prediction == 0:
+            st.write("The news is Real")
+        else:
+            st.write("The news is Fake")
 
-            if prediction == 0:
-                st.write("The news is Real")
-            else:
-                st.write("The news is Fake")
+    # Display the accuracies
+    st.write("Training Accuracy:", train_accuracy)
+    st.write("Testing Accuracy:", test_accuracy)
