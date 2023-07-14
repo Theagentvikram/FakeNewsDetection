@@ -73,12 +73,6 @@ train_accuracy = accuracy_score(y_train, y_train_pred)
 y_test_pred = model.predict(X_test_vectorized)
 test_accuracy = accuracy_score(y_test, y_test_pred)
 
-# Dumping
-# print("Dumbing Model")
-# jb.dump(model,"Test.joblib")
-# print("Model Dump")
-# model = jb.load("Test.joblib")
-
 # User input
 text = st.text_area("Enter the news text:")
 if text:
@@ -91,6 +85,3 @@ if text:
 # Display the accuracies
 st.write("Training Accuracy:", train_accuracy)
 st.write("Testing Accuracy:", test_accuracy)
-
-# jb.dump(vectorizer, "vect.dat")
-
