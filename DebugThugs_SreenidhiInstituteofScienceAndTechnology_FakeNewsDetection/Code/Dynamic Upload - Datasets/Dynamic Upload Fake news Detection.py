@@ -13,6 +13,7 @@ import nltk
 nltk.download('stopwords')
 stop_words = stopwords.words('english')
 port_stem = PorterStemmer()
+st.set_page_config(page_title="Fake News Detection", page_icon="IMG.png")
 
 def preprocess_text(content):
     stemmed_content = re.sub('[^a-zA-Z]', ' ', content)
