@@ -2,17 +2,20 @@ import streamlit as st
 import numpy as np
 import pandas as pd
 import re
+import nltk
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
-import nltk
 
+# Download NLTK stopwords
 nltk.download('stopwords')
+
 stop_words = stopwords.words('english')
 st.set_page_config(page_title="Fake News Detection", page_icon="IMG.png")
+
 def preprocess_text(content):
     ps = PorterStemmer()
     stemmed_content = re.sub('[^a-zA-Z]', ' ', content)
@@ -22,7 +25,7 @@ def preprocess_text(content):
     stemmed_content = ' '.join(stemmed_content)
     return stemmed_content
 
-def predict_fake_news(text):
+def predict_fake_news(text, vectorizer, model):
     preprocessed_text = preprocess_text(text)
     vectorized_text = vectorizer.transform([preprocessed_text])
     prediction = model.predict(vectorized_text)[0]
