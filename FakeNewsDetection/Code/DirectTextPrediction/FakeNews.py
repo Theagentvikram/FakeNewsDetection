@@ -1,10 +1,10 @@
 import streamlit as st
 import re
+import nltk
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
 import joblib as jb
-import nltk
 
 # Download NLTK stopwords
 nltk.download('stopwords')
@@ -46,5 +46,7 @@ def main():
     acc=jb.load("acc.dat")
     st.write("Training Accuracy:", acc[0])
     st.write("Testing Accuracy:", acc[1])
+
 if __name__ == "__main__":
     main()
+
