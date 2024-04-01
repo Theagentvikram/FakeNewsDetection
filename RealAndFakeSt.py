@@ -6,6 +6,7 @@ from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
 
 import nltk
 
@@ -32,7 +33,7 @@ st.title("Fake News Detection")
 
 uploaded_true = st.file_uploader("Upload True.csv", type="csv")
 uploaded_fake = st.file_uploader("Upload Fake.csv", type="csv")
-st.write("Wait for the Processing...")
+
 if uploaded_true is not None and uploaded_fake is not None:
     df_true = pd.read_csv(uploaded_true)
     df_fake = pd.read_csv(uploaded_fake)
@@ -54,6 +55,13 @@ if uploaded_true is not None and uploaded_fake is not None:
     model = LogisticRegression()
     model.fit(x, y)
 
+    # Calculate accuracy on training data
+    y_train_pred = model.predict(x)
+    training_accuracy = accuracy_score(y, y_train_pred)
+
+    # Display accuracy
+    st.write(f"Training Accuracy: {training_accuracy}")
+
     text = st.text_area("Enter the news text:")
     prediction = predict_fake_news(text)
 
@@ -61,4 +69,3 @@ if uploaded_true is not None and uploaded_fake is not None:
         st.write("The news is Real")
     else:
         st.write("The news is Fake")
-#sree

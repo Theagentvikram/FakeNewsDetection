@@ -1,4 +1,3 @@
-import streamlit as st
 import numpy as np
 import pandas as pd
 import re
@@ -9,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 import nltk
-
+import joblib as jb
 nltk.download('stopwords')
 stop_words = stopwords.words('english')
 port_stem = PorterStemmer()
@@ -28,16 +27,9 @@ def predict_fake_news(text):
     prediction = model.predict(vectorized_text)[0]
     return prediction
 
-# Streamlit App
-st.title("Fake News Detection")
-uploaded_fake= pd.read_csv(r"S:\Dataset\Fake.csv")
-
-# Load the true news dataset
-uploaded_true= pd.read_csv(r"S:\Dataset\True.csv")
-
-
-df_true = uploaded_true
-df_fake = uploaded_fake
+# Data Collection
+df_true = pd.read_csv(r"S:\Dataset\True.csv")
+df_fake = pd.read_csv(r"S:\Dataset\Fake.csv")
 
 # Preprocess the data
 df_true['content'] = df_true['title'] + ' ' + df_true['text'] + ' ' + df_true['subject'] + ' ' + df_true['date']
@@ -56,16 +48,15 @@ y = np.concatenate([np.zeros(len(df_true)), np.ones(len(df_fake))])
 # Split the dataset into training and testing subsets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-
 # Vectorize the text data
 vectorizer = TfidfVectorizer()
 X_train_vectorized = vectorizer.fit_transform(X_train)
 X_test_vectorized = vectorizer.transform(X_test)
 
 # Train the model
-model = LogisticRegression()
-model.fit(X_train_vectorized, y_train)
-
+# model = LogisticRegression()
+# model.fit(X_train_vectorized, y_train)
+model=jb.load("finaldump.joblib")
 # Evaluate the model
 y_train_pred = model.predict(X_train_vectorized)
 train_accuracy = accuracy_score(y_train, y_train_pred)
@@ -73,24 +64,19 @@ train_accuracy = accuracy_score(y_train, y_train_pred)
 y_test_pred = model.predict(X_test_vectorized)
 test_accuracy = accuracy_score(y_test, y_test_pred)
 
-# Dumping
-# print("Dumbing Model")
-# jb.dump(model,"Test.joblib")
-# print("Model Dump")
-# model = jb.load("Test.joblib")
 
 # User input
-text = st.text_area("Enter the news text:")
-if text:
-    prediction = predict_fake_news(text)
-    if prediction == 0:
-        st.write("The news is Real")
-    else:
-        st.write("The news is Fake")
+# text = input("Enter the news text:")
+# if text:
+#     prediction = predict_fake_news(text)
+#     if prediction == 0:
+#         print("The news is Real")
+#     else:
+#         print("The news is Fake")
 
 # Display the accuracies
-st.write("Training Accuracy:", train_accuracy)
-st.write("Testing Accuracy:", test_accuracy)
-
-# jb.dump(vectorizer, "vect.dat")
+print("Training Accuracy:", train_accuracy)
+print("Testing Accuracy:", test_accuracy)
+acc=[train_accuracy,test_accuracy]
+jb.dump(acc,"acc.dat")
 

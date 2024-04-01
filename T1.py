@@ -9,6 +9,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 import nltk
+from urllib.request import urlopen
+
+import joblib as jb
+
 
 nltk.download('stopwords')
 stop_words = stopwords.words('english')
@@ -48,6 +52,7 @@ df_fake['content'] = df_fake['content'].apply(preprocess_text)
 
 # Combine the datasets
 df = pd.concat([df_true, df_fake], ignore_index=True)
+st.write(df.head())
 
 # Separate the data and label
 X = df['content'].values
@@ -56,30 +61,8 @@ y = np.concatenate([np.zeros(len(df_true)), np.ones(len(df_fake))])
 # Split the dataset into training and testing subsets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+model = jb.load("Test.joblib")
 
-# Vectorize the text data
-vectorizer = TfidfVectorizer()
-X_train_vectorized = vectorizer.fit_transform(X_train)
-X_test_vectorized = vectorizer.transform(X_test)
-
-# Train the model
-model = LogisticRegression()
-model.fit(X_train_vectorized, y_train)
-
-# Evaluate the model
-y_train_pred = model.predict(X_train_vectorized)
-train_accuracy = accuracy_score(y_train, y_train_pred)
-
-y_test_pred = model.predict(X_test_vectorized)
-test_accuracy = accuracy_score(y_test, y_test_pred)
-
-# Dumping
-# print("Dumbing Model")
-# jb.dump(model,"Test.joblib")
-# print("Model Dump")
-# model = jb.load("Test.joblib")
-
-# User input
 text = st.text_area("Enter the news text:")
 if text:
     prediction = predict_fake_news(text)
@@ -91,6 +74,3 @@ if text:
 # Display the accuracies
 st.write("Training Accuracy:", train_accuracy)
 st.write("Testing Accuracy:", test_accuracy)
-
-# jb.dump(vectorizer, "vect.dat")
-
