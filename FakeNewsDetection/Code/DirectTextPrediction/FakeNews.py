@@ -1,40 +1,41 @@
 import streamlit as st
 import requests
 
-# Hugging Face API setup
-API_URL = "https://api-inference.huggingface.co/models/bhadresh-savani/bert-base-uncased-fake-news"
+# ✅ Hugging Face API configuration
+API_URL = "https://api-inference.huggingface.co/models/mrm8488/bert-mini-finetuned-fake-news"
 headers = {
     "Authorization": f"Bearer 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"
 }
 
-# Function to query the model
+# 🔁 Inference function
 def query(payload):
     response = requests.post(API_URL, headers=headers, json=payload)
     return response.json()
 
-# Streamlit UI
+# 🚀 Streamlit UI
 st.set_page_config(page_title="Fake News Detector", page_icon="📰")
-st.title("📰 Fake News Detection using Hugging Face API")
+st.title("📰 Fake News Detection (Hugging Face API)")
+st.markdown("Enter any news text below. The model will predict whether it’s **Fake** or **Real**.")
 
-st.markdown("Enter a news article or sentence to detect if it's **real or fake**.")
+user_input = st.text_area("📝 News Content", height=200)
 
-user_input = st.text_area("Enter news content:")
-
-if st.button("Predict"):
+if st.button("🔍 Predict"):
     if user_input.strip() == "":
-        st.warning("Please enter some text.")
+        st.warning("⚠️ Please enter some text before predicting.")
     else:
-        with st.spinner("Analyzing..."):
+        with st.spinner("Analyzing with BERT model..."):
             output = query({"inputs": user_input})
-        
+
         if isinstance(output, list) and "label" in output[0]:
             label = output[0]["label"]
             score = output[0]["score"]
-            
-            if label.lower() == "real":
-                st.success(f"✅ The news is likely **REAL** (Confidence: {score:.2%})")
+
+            if label.upper() == "FAKE":
+                st.error(f"❌ This news is likely **FAKE**\nConfidence: {score:.2%}")
+            elif label.upper() == "REAL":
+                st.success(f"✅ This news is likely **REAL**\nConfidence: {score:.2%}")
             else:
-                st.error(f"❌ The news is likely **FAKE** (Confidence: {score:.2%})")
+                st.info(f"ℹ️ Prediction: {label} ({score:.2%})")
         else:
             st.error("⚠️ Error from model or rate limit exceeded.")
             st.json(output)
