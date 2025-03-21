@@ -15,7 +15,7 @@ st.set_page_config(page_title="Fake News Detection", page_icon="📰")
 # Caching the loading of models to optimize performance
 @st.cache_resource
 def load_model():
-    return jb.load("finaldump.joblib")
+    return jb.load("final.joblib")
 
 @st.cache_resource
 def load_vectorizer():
