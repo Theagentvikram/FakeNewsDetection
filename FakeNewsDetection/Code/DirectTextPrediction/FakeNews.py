@@ -15,14 +15,9 @@ def query(payload):
         response = requests.post(API_URL, headers=headers, json=payload)
         response.raise_for_status()
         return response.json()
-    except requests.exceptions.HTTPError as http_err:
-        st.error(f"HTTP error occurred: {http_err}")
-    except requests.exceptions.RequestException as req_err:
-        st.error(f"Request error: {req_err}")
-    except requests.exceptions.JSONDecodeError:
-        st.error("Invalid JSON response received from the API.")
-        st.text(response.text)
-    return {"error": "API request failed or returned invalid response."}
+    except requests.exceptions.RequestException as err:
+        st.error(f"⚠️ Request failed: {err}")
+        return None
 
 # ✅ Streamlit UI
 st.set_page_config(page_title="Fake News Detection", page_icon="📰")
@@ -39,9 +34,11 @@ if st.button("🔍 Predict"):
         with st.spinner("Analyzing..."):
             result = query({"inputs": user_input})
 
-        if isinstance(result, list) and "label" in result[0]:
-            label = result[0]['label']
-            score = result[0]['score']
+        if result and isinstance(result, list) and isinstance(result[0], list):
+            predictions = result[0]
+            top = max(predictions, key=lambda x: x["score"])
+            label = top["label"]
+            score = top["score"]
 
             if label == "LABEL_0":
                 st.error(f"❌ This news is likely **FAKE**\nConfidence: {score:.2%}")
@@ -50,5 +47,5 @@ if st.button("🔍 Predict"):
             else:
                 st.info(f"ℹ️ Result: {label} ({score:.2%})")
         else:
-            st.error("⚠️ Model error or invalid response.")
+            st.error("⚠️ Unexpected model response.")
             st.json(result)
