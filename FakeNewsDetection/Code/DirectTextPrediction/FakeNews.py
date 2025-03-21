@@ -9,11 +9,28 @@ import joblib as jb
 # Download NLTK stopwords
 nltk.download('stopwords')
 
-# Load pre-trained models
-model = jb.load("finaldump.joblib")
-vectorizer = jb.load("vect.dat")
-st.set_page_config(page_title="Fake News Detection", page_icon="IMG.png")
-# Preprocess text
+# Set Streamlit page configuration
+st.set_page_config(page_title="Fake News Detection", page_icon="📰")
+
+# Caching the loading of models to optimize performance
+@st.cache_resource
+def load_model():
+    return jb.load("finaldump.joblib")
+
+@st.cache_resource
+def load_vectorizer():
+    return jb.load("vect.dat")
+
+@st.cache_resource
+def load_accuracy():
+    return jb.load("acc.dat")
+
+# Load all resources
+model = load_model()
+vectorizer = load_vectorizer()
+acc = load_accuracy()
+
+# Text preprocessing function
 def preprocess_text(content):
     stop_words = stopwords.words('english')
     port_stem = PorterStemmer()
@@ -21,32 +38,37 @@ def preprocess_text(content):
     stemmed_content = stemmed_content.lower()
     stemmed_content = stemmed_content.split()
     stemmed_content = [port_stem.stem(word) for word in stemmed_content if word not in stop_words]
-    stemmed_content = ' '.join(stemmed_content)
-    return stemmed_content
+    return ' '.join(stemmed_content)
 
-# Predict fake news
+# Prediction function
 def predict_fake_news(text):
     preprocessed_text = preprocess_text(text)
     vectorized_text = vectorizer.transform([preprocessed_text])
     prediction = model.predict(vectorized_text)[0]
     return prediction
 
-# Streamlit app code
+# Main Streamlit UI
 def main():
-    st.title("Fake News Detection")
+    st.title("📰 Fake News Detection App")
+    st.markdown("Enter the news content below to check whether it's **Real** or **Fake**.")
 
-    text = st.text_input("Enter the news text:")
+    text = st.text_area("Enter the news text here:")
+    
     if st.button("Predict"):
-        if text:
+        if text.strip() == "":
+            st.warning("⚠️ Please enter some text before clicking Predict.")
+        else:
             prediction = predict_fake_news(text)
             if prediction == 0:
-                st.write("The news is Real")
+                st.success("✅ The news is **Real**")
             else:
-                st.write("The news is Fake")
-    acc=jb.load("acc.dat")
-    st.write("Training Accuracy:", acc[0])
-    st.write("Testing Accuracy:", acc[1])
+                st.error("❌ The news is **Fake**")
 
+    st.markdown("---")
+    st.subheader("📊 Model Accuracy")
+    st.write(f"**Training Accuracy:** {acc[0]:.2f}")
+    st.write(f"**Testing Accuracy:** {acc[1]:.2f}")
+
+# Run the app
 if __name__ == "__main__":
     main()
-
