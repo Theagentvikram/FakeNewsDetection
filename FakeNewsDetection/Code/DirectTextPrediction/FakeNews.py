@@ -1,41 +1,54 @@
 import streamlit as st
 import requests
 
-# Hugging Face API setup
+# ✅ Hugging Face Inference API details
 API_URL = "https://api-inference.huggingface.co/models/jy46604790/Fake-News-Bert-Detect"
+HF_TOKEN = "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"
+
 headers = {
-    "Authorization": f"Bearer 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"
+    "Authorization": f"Bearer {HF_TOKEN}"
 }
 
-# Function to query the model
+# ✅ Function to query Hugging Face model safely
 def query(payload):
-    response = requests.post(API_URL, headers=headers, json=payload)
-    return response.json()
+    try:
+        response = requests.post(API_URL, headers=headers, json=payload)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.HTTPError as http_err:
+        st.error(f"HTTP error occurred: {http_err}")
+    except requests.exceptions.RequestException as req_err:
+        st.error(f"Request error: {req_err}")
+    except requests.exceptions.JSONDecodeError:
+        st.error("Invalid JSON response received from the API.")
+        st.text(response.text)
+    return {"error": "API request failed or returned invalid response."}
 
-# Streamlit UI
-st.set_page_config(page_title="Fake News Detector", page_icon="📰")
-st.title("📰 Fake News Detection using Hugging Face API")
+# ✅ Streamlit UI
+st.set_page_config(page_title="Fake News Detection", page_icon="📰")
+st.title("📰 Fake News Detection using Hugging Face")
 
-st.markdown("Enter a news article or sentence below to check if it's **real or fake**.")
+st.markdown("Enter a news article or statement and the model will predict whether it's **Fake** or **Real**.")
 
-user_input = st.text_area("Enter news content:")
+user_input = st.text_area("📝 News Content", height=200)
 
-if st.button("Predict"):
+if st.button("🔍 Predict"):
     if user_input.strip() == "":
-        st.warning("Please enter some text to analyze.")
+        st.warning("⚠️ Please enter some news content.")
     else:
         with st.spinner("Analyzing..."):
-            output = query({"inputs": user_input})
-        
-        # Check response format
-        if isinstance(output, list) and "label" in output[0]:
-            label = output[0]["label"]
-            score = output[0]["score"]
-            
-            if label == 'LABEL_0':
-                st.error(f"❌ The news is likely **FAKE** (Confidence: {score:.2%})")
+            result = query({"inputs": user_input})
+
+        if isinstance(result, list) and "label" in result[0]:
+            label = result[0]['label']
+            score = result[0]['score']
+
+            if label == "LABEL_0":
+                st.error(f"❌ This news is likely **FAKE**\nConfidence: {score:.2%}")
+            elif label == "LABEL_1":
+                st.success(f"✅ This news is likely **REAL**\nConfidence: {score:.2%}")
             else:
-                st.success(f"✅ The news is likely **REAL** (Confidence: {score:.2%})")
+                st.info(f"ℹ️ Result: {label} ({score:.2%})")
         else:
-            st.error("⚠️ Error from model or rate limit exceeded.")
-            st.json(output)
+            st.error("⚠️ Model error or invalid response.")
+            st.json(result)
