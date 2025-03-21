@@ -1,74 +1,40 @@
 import streamlit as st
-import re
-import nltk
-from nltk.corpus import stopwords
-from nltk.stem.porter import PorterStemmer
-from sklearn.feature_extraction.text import TfidfVectorizer
-import joblib as jb
+import requests
 
-# Download NLTK stopwords
-nltk.download('stopwords')
+# Hugging Face API setup
+API_URL = "https://api-inference.huggingface.co/models/mrm8488/bert-tiny-finetuned-fake-news"
+headers = {
+    "Authorization": f"Bearer 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"
+}
 
-# Set Streamlit page configuration
-st.set_page_config(page_title="Fake News Detection", page_icon="📰")
+# Function to call Hugging Face API
+def query(payload):
+    response = requests.post(API_URL, headers=headers, json=payload)
+    return response.json()
 
-# Caching the loading of models to optimize performance
-@st.cache_resource
-def load_model():
-    return jb.load("final.joblib")
+# Streamlit UI
+st.set_page_config(page_title="Fake News Detector", page_icon="📰")
+st.title("📰 Fake News Detection using Hugging Face API")
 
-@st.cache_resource
-def load_vectorizer():
-    return jb.load("vect.dat")
+st.markdown("Enter a news article or sentence below to check if it's **real or fake**.")
 
-@st.cache_resource
-def load_accuracy():
-    return jb.load("acc.dat")
+user_input = st.text_area("Enter news content:")
 
-# Load all resources
-model = load_model()
-vectorizer = load_vectorizer()
-acc = load_accuracy()
+if st.button("Predict"):
+    if user_input.strip() == "":
+        st.warning("Please enter some text to analyze.")
+    else:
+        with st.spinner("Analyzing..."):
+            output = query({"inputs": user_input})
 
-# Text preprocessing function
-def preprocess_text(content):
-    stop_words = stopwords.words('english')
-    port_stem = PorterStemmer()
-    stemmed_content = re.sub('[^a-zA-Z]', ' ', content)
-    stemmed_content = stemmed_content.lower()
-    stemmed_content = stemmed_content.split()
-    stemmed_content = [port_stem.stem(word) for word in stemmed_content if word not in stop_words]
-    return ' '.join(stemmed_content)
-
-# Prediction function
-def predict_fake_news(text):
-    preprocessed_text = preprocess_text(text)
-    vectorized_text = vectorizer.transform([preprocessed_text])
-    prediction = model.predict(vectorized_text)[0]
-    return prediction
-
-# Main Streamlit UI
-def main():
-    st.title("📰 Fake News Detection App")
-    st.markdown("Enter the news content below to check whether it's **Real** or **Fake**.")
-
-    text = st.text_area("Enter the news text here:")
-    
-    if st.button("Predict"):
-        if text.strip() == "":
-            st.warning("⚠️ Please enter some text before clicking Predict.")
-        else:
-            prediction = predict_fake_news(text)
-            if prediction == 0:
-                st.success("✅ The news is **Real**")
+        # Check response format
+        if isinstance(output, list) and "label" in output[0]:
+            label = output[0]['label']
+            score = output[0]['score']
+            if label == 'LABEL_0':
+                st.success(f"✅ The news is likely **REAL** (Confidence: {score:.2%})")
             else:
-                st.error("❌ The news is **Fake**")
-
-    st.markdown("---")
-    st.subheader("📊 Model Accuracy")
-    st.write(f"**Training Accuracy:** {acc[0]:.2f}")
-    st.write(f"**Testing Accuracy:** {acc[1]:.2f}")
-
-# Run the app
-if __name__ == "__main__":
-    main()
+                st.error(f"❌ The news is likely **FAKE** (Confidence: {score:.2%})")
+        else:
+            st.error("⚠️ Model error or rate limit exceeded.")
+            st.json(output)
